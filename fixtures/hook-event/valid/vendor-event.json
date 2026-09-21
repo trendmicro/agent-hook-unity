@@ -1,5 +1,5 @@
 {
-  "spec": "agent-hooks/0.1",
+  "spec": "agent-hook-unity/0.1",
   "event_id": "6706d7e5-8efa-49f2-a8a1-4b19c0b216c8",
   "hook_event_name": "x-example/PromptExpanded",
   "session_id": "session-42",

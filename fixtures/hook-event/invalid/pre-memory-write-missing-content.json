@@ -1,5 +1,5 @@
 {
-  "spec": "agent-hooks/0.1",
+  "spec": "agent-hook-unity/0.1",
   "event_id": "8c7d9b12-4e68-4c2f-9af5-8476ae8b3021",
   "hook_event_name": "PreMemoryWrite",
   "session_id": "session-42",

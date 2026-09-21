@@ -1,5 +1,5 @@
 {
-  "spec": "agent-hooks/0.1",
+  "spec": "agent-hook-unity/0.1",
   "event_id": "c1f0b6e2-57cb-4b72-a083-d5d2c25e834b",
   "decision": "allow",
   "hookSpecificOutput": {

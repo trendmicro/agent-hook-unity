@@ -1,5 +1,5 @@
 {
-  "spec": "agent-hooks/0.1",
+  "spec": "agent-hook-unity/0.1",
   "event_id": "6edab8d4-1bb3-4c37-bd6c-7ad7da707b7a",
   "hook_event_name": "UserPromptSubmit",
   "session_id": "session-42",

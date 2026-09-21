@@ -1,7 +1,7 @@
 ---
 title: "RFC 0006: Enterprise Security Extensions Strategy & Non-Core Capabilities"
 status: Draft
-discussion: "Pending — repository Discussions are not enabled"
+discussion: "Pending — prerequisite Discussion has not been opened"
 review-start: "Not started"
 review-end: "Not scheduled"
 maintainer-votes: []
@@ -16,9 +16,21 @@ superseded-by: []
 
 This RFC proposes a standardized architectural strategy and recommended extension profiles for enterprise-grade security capabilities within the Agent Hook ecosystem.
 
+This is an unaccepted proposal. Its top-level `decision` baseline was already
+introduced by PR #9 before this RFC; the enterprise profiles below did not
+introduce that Core response shape. [RFC 0007](./0007-core-draft-consolidation.md)
+records the consolidated working baseline and migration to
+`agent-hook-unity/0.1`, including the corresponding signing-domain update in
+this draft. The profiles remain optional proposals and have not been accepted
+or certified by their appearance in this repository.
+
 To preserve the minimalism, zero-dependency, and lightweight nature of the **Agent Hook Core 0.1 Specification**, heavy enterprise defense features—such as cryptographic wire signing (Ed25519/TPM), tamper-evident audit ledgers (hash-chaining), asynchronous Human-in-the-Loop (HITL) suspension, Time-of-Check to Time-of-Use (TOCTOU) payload verification, and out-of-band administrative session revocation—are explicitly designated as **optional, non-core extension profiles**.
 
-These profiles leverage the existing standard `extensions` container defined in [`spec/0.1/extensions.md`](../spec/0.1/extensions.md). Conforming implementations are free to adopt, customize, or omit these extensions without breaking Core 0.1 interoperability.
+These profiles use the existing `extensions` container defined in
+[`spec/0.1/extensions.md`](../spec/0.1/extensions.md). Unknown extension data can
+be ignored without changing Core schema compatibility. Interoperability and
+enforcement for a profile require explicit agreement on its version and
+semantics; independently customized profiles do not imply compatibility.
 
 ---
 
@@ -40,7 +52,11 @@ Forcing heavy enterprise armor into the **Core 0.1 normative specification** wou
 
 > **"Core does subtraction (protecting a universal minimal baseline); Extensions do addition (mounting modular enterprise armor on demand)."**
 
-By establishing a standardized yet strictly optional **Enterprise Security Extension Profile**, this RFC provides a common blueprint for high-security implementations (such as PEP proxies like NVIDIA NeMo Guardrails/Relay and Policy Decision Points like Trend Micro Vision One) while guaranteeing 100% interoperability with lightweight Core 0.1 agents.
+This RFC proposes optional enterprise profiles for implementations such as PEP
+proxies and policy decision points. Lightweight agents can retain Core schema
+compatibility while ignoring those extensions, but profile-specific guarantees
+require matching implementations and explicit configuration on the participating
+hosts. No vendor adoption or interoperability certification is asserted.
 
 ---
 
@@ -114,7 +130,7 @@ Used to guarantee message authenticity and provenance between Agent, PEP (Relay)
 ##### Request / Response Example
 ```json
 {
-  "spec": "agent-hooks/0.1",
+  "spec": "agent-hook-unity/0.1",
   "event_id": "8f2ab3e1-4c5d-4e6f-8a9b-0c1d2e3f4a5b",
   "hook_event_name": "PreToolUse",
   "session_id": "sess_production_9981",
@@ -159,9 +175,9 @@ To ensure consistent interoperability across distinct runtime languages (Python,
    - The self-referential signature property (`extensions["sec.enterprise.crypto"].signature`) and `canonical_hash` (if present) MUST be excluded prior to canonicalization.
 3. **Domain Separator & Preimage**:
    - The preimage MUST be prefixed with a strict profile/version domain separation string:
-     `agent-hooks/0.1:sec.enterprise.crypto:v1\n`
+     `agent-hook-unity/0.1:sec.enterprise.crypto:v1\n`
    - The complete byte sequence for signing and verification is:
-     $$\text{PREIMAGE\_BYTES} = \text{"agent-hooks/0.1:sec.enterprise.crypto:v1\n"} \,||\, \text{JCS}(\text{payload\_without\_sig})$$
+     $$\text{PREIMAGE\_BYTES} = \text{"agent-hook-unity/0.1:sec.enterprise.crypto:v1\n"} \,||\, \text{JCS}(\text{payload\_without\_sig})$$
    - `canonical_hash` is computed as `<hash_algo>:<hex_digest>` over $\text{PREIMAGE\_BYTES}$.
 4. **Replay & Freshness Binding**:
    - The payload MUST include a valid ISO-8601 `timestamp` and a unique UUID `event_id`.
@@ -218,7 +234,7 @@ Standardizes asynchronous human intervention when a Policy Decision Point return
 ##### PDP Response with Suspension Challenge
 ```json
 {
-  "spec": "agent-hooks/0.1",
+  "spec": "agent-hook-unity/0.1",
   "event_id": "36c2b982-1d4c-4dc2-ae5b-a65139601741",
   "decision": "ask",
   "reason": "Execution of bash shell with root privilege requires administrator sign-off.",
@@ -238,7 +254,7 @@ Standardizes asynchronous human intervention when a Policy Decision Point return
 When human approval resolves out-of-band, the enterprise PDP or callback service delivers an asynchronous correlated response matching the original `event_id` (`36c2b982-1d4c-4dc2-ae5b-a65139601741`) to the host or PEP resumption endpoint:
 ```json
 {
-  "spec": "agent-hooks/0.1",
+  "spec": "agent-hook-unity/0.1",
   "event_id": "36c2b982-1d4c-4dc2-ae5b-a65139601741",
   "decision": "allow",
   "reason": "Approved by security administrator Alice.",
@@ -429,7 +445,7 @@ When `mode` is `"bounded_open"`, the host or PEP MUST implement the circuit brea
    - In distributed deployments, the host MAY accept degradation policies provisioned dynamically by an authorized Policy Administration Point (PAP) or Policy Decision Point (PDP) via an authenticated control-plane channel (e.g. mTLS or cryptographically signed policy bundle).
    - **Precedence & Security Invariant**: An ordinary, unauthenticated hook handler responding to tool or lifecycle events MUST NOT be permitted to downgrade or overwrite an administrator's degradation policy (e.g., a failing handler cannot unilaterally switch the host from `strict_fail_closed` to `fail_open_monitored`). Hook responses MAY only report policy state or request a degradation policy if the issuer is explicitly authenticated as possessing administrative policy authority.
 2. **Bootstrap Behavior**:
-   - When an agent host boots with no preconfigured degradation policy and no cached policy from an authorized PAP, it defaults to the Core 0.1 baseline (fail-open for handler errors with standard error logging), unless booted in an `enterprise-strict` profile which defaults to `strict_fail_closed` for all mutating gates.
+   - When an agent host boots with no preconfigured degradation policy and no cached policy from an authorized PAP, it defaults to the Core 0.1 baseline: a failed invocation supplies no decision, other applicable decisions and native policy remain effective, and minimal diagnostics are recommended. An explicitly configured `enterprise-strict` profile instead defaults to `strict_fail_closed` for all mutating gates.
 3. **Persistence, Expiry, Replacement, and Revocation**:
    - Policies dynamically provisioned by an authorized PAP MAY declare `ttl_seconds` or `expires_at`. Upon expiration, the host evicts the cached policy and falls back to host bootstrap defaults.
    - An administrator or authorized PAP MAY revoke or replace a degradation policy at any time via control-plane push or administrative event (`x-nemo/SessionRevoke`), which takes effect immediately for all subsequent gate evaluations.
@@ -469,7 +485,7 @@ Implementations MAY support administrative revocation through either:
 
 ```json
 {
-  "spec": "agent-hooks/0.1",
+  "spec": "agent-hook-unity/0.1",
   "event_id": "9f3bc4e2-5d6e-4f7a-9b0c-1d2e3f4a5b6c",
   "hook_event_name": "x-nemo/SessionRevoke",
   "session_id": "sess_production_9981",
@@ -523,8 +539,15 @@ Upon receiving a valid revocation command, the PEP/Host MUST:
 
 ## Compatibility Impact
 
-- **Core 0.1 Compatibility**: **100% Compatible**. All mechanisms defined in this RFC reside inside the `extensions` dictionary or out-of-band endpoints. No Core schema fields or mandatory behaviors are altered.
-- **Backward Compatibility**: Existing agents that do not understand these extensions continue to function normally. Gate decisions (`allow`, `deny`, `ask`, `defer`) remain in their canonical top-level format.
+- **Core 0.1 Compatibility**: These proposed profiles use `extensions` or
+  out-of-band endpoints and add no mandatory Core dependency. Enforcement
+  guarantees require explicit agreement and implementation by participating
+  hosts; ignoring extension data does not provide the profile's guarantees.
+- **Draft migration**: Hosts and handlers must coordinate the
+  `agent-hook-unity/0.1` identity change described by RFC 0007. Signed payloads,
+  domain separators, and content-bound approvals require migration as well.
+  Within that declared contract, existing supported nested controls remain a
+  fallback only when the canonical top-level decision is absent.
 
 ---
 

@@ -72,45 +72,60 @@ observation or enforcement.
 
 ## Response mappings
 
-The Agent Hook response is Claude-shaped and event-specific, not a universal
-allow/deny/ask decision document. An adapter MUST interpret a control response
-only at an event classified as a Gate by the registry, declared `gate`, and
-reached through a native control point that has not passed the relevant effect
-boundary.
+The Agent Hook response uses a canonical top-level `decision`, with
+event-specific allowed values, effects, and optional rewrites. An adapter MUST
+interpret a control response only at an event classified as a Gate by the
+registry, declared `gate`, and reached through a native control point that can
+still enforce the event's controlled effect.
 
 | Core Gate | Standard response shape | Claude Code direction |
 | --- | --- | --- |
-| `UserPromptSubmit` | Top-level `decision: "block"` plus `reason`. | Map to Claude Code's prompt block response. |
-| `BeforeModelRequest` | `hookSpecificOutput` with `hookEventName`, `permissionDecision`, optional `permissionDecisionReason`, and optional `updatedMessages`. | Claude Code has no native event; declare it `unavailable` rather than fabricate a mapping. |
-| `PreToolUse` | `hookSpecificOutput` with `hookEventName`, `permissionDecision`, optional `permissionDecisionReason`, and optional `updatedInput`. | Map to Claude Code's `PreToolUse` permission decision. |
-| `PermissionRequest` | `hookSpecificOutput.decision.behavior`, with optional input, permission, message, and interrupt updates. | Map to Claude Code's nested permission-request decision. |
-| `PreNetworkAccess`, `PreMemoryWrite`, `PreConfigChange` | `hookSpecificOutput` with `hookEventName`, `permissionDecision`, and optional `permissionDecisionReason`. | No mapping defined here; enforce only at an actual native boundary that meets the registry's Gate requirements. |
+| `SessionStart` | `decision: "allow"` or `"deny"`; no rewrite. | This guide claims no Claude Code Gate mapping. Declare `observe`, `partial`, or `unavailable` unless the native boundary can prevent agent work from starting. |
+| `UserPromptSubmit` | `decision: "allow"`, `"deny"`, or legacy `"block"`; optional `hookSpecificOutput.updatedPrompt`. | Map denial or legacy block to Claude Code's prompt block response. Map a rewrite only if the native callback can replace the accepted prompt before execution. |
+| `BeforeModelRequest` | `decision: "allow"`, `"deny"`, `"ask"`, or `"defer"`; optional `hookSpecificOutput.updatedMessages`. | Claude Code has no native event; declare it `unavailable` rather than fabricate a mapping. |
+| `AfterModelResponse` | `decision: "allow"` or `"deny"`; optional `hookSpecificOutput.updatedResponse`. | Claude Code has no faithful native event. A Gate requires the complete result to remain buffered before rendering or context ingestion. |
+| `PreToolUse` | `decision: "allow"`, `"deny"`, `"ask"`, or `"defer"`; optional `hookSpecificOutput.updatedInput`. | Map the canonical decision and supported rewrite to Claude Code's native `PreToolUse` response. |
+| `PermissionRequest` | `decision: "allow"` or `"deny"`; optional native approval updates under `hookSpecificOutput.decision`. | Map to Claude Code's permission-request response while preserving native policy authority. |
+| `PostToolUse` | `decision: "allow"` or `"deny"`; optional `hookSpecificOutput.updatedOutput`. | Claim `gate` only when the adapter can hold the completed result before model-context ingestion and map the replacement faithfully. The tool execution has already completed. |
+| `PreNetworkAccess` | `decision: "allow"`, `"deny"`, `"ask"`, or `"defer"`; no rewrite. | No Claude Code mapping is defined here. Enforce only at an actual pre-dispatch request boundary. |
+| `PostNetworkAccess` | `decision: "allow"` or `"deny"`; no rewrite. | No Claude Code mapping is defined here. A Gate requires buffered response delivery; Core defines no body-inspection or body-replacement field. |
+| `PreMemoryWrite` | `decision: "allow"`, `"deny"`, `"ask"`, or `"defer"`; optional `hookSpecificOutput.updatedContent`. | No Claude Code mapping is defined here. Apply a replacement only before durable persistence or visibility. |
+| `PreConfigChange` | `decision: "allow"`, `"deny"`, `"ask"`, or `"defer"`; no rewrite. | No Claude Code mapping is defined here. Enforce only before the effective mutation. |
+| `SubagentStart` | `decision: "allow"` or `"deny"`; no rewrite. | Preserve the native event, but claim `gate` only if a denial prevents executable work from reaching the child. |
 
-`permissionDecision` uses `allow`, `deny`, `ask`, or `defer`; nested
-`decision.behavior` uses `allow` or `deny`. A response with
-`hookSpecificOutput` MUST use a `hookEventName` that matches the request. An
-adapter MUST NOT let an allow result override native or organization policy.
-The three added Gates MUST follow the
-[Core response rules](./core.md#response-envelope) for native approval,
-non-interactive `ask`, and `defer`; they define no input-rewriting control.
+When top-level `decision` is present, it is canonical. The adapter MUST ignore
+legacy nested controls (`permissionDecision`, `permissionDecisionReason`, and
+`hookSpecificOutput.decision.behavior`). For backward compatibility, nested
+controls remain valid only when top-level `decision` is absent.
+`hookSpecificOutput.hookEventName` MUST match the request whenever
+`hookSpecificOutput` is present. An `allow` MUST NOT override native,
+organization, sandbox, managed-policy, or user-approval restrictions.
 
-Top-level `decision: "block"` and all `hookSpecificOutput` control members are
-ignored for an Observe event. Claude Code's other response shapes are likewise
-event-specific: `PostToolUse`, for example, can replace model-visible output
-only after the effect completed, and `Stop` blocking has a native retry limit.
-Those facts do not make either event an Agent Hook `gate`. No universal Claude
-Code response compatibility is claimed, and no Claude mapping exists for the
-two model events in 0.1.
+For Gates supporting `ask`, adapters MUST follow the
+[Core response rules](./core.md#response-envelope): the controlled operation
+does not proceed while approval is unresolved, and a non-interactive host
+without suspension treats `ask` as `deny`. `defer` leaves resolution to native
+approval or policy and is not approval. A schema-valid rewrite that fails
+native validation fails closed; the adapter MUST NOT restore the original
+unredacted value.
 
-Adapters MUST correlate the native invocation with `event_id` and MUST apply the
-core fail-open rule to absent, invalid, timed-out, or errored Agent Hook
-responses. A product's independently configured native behavior may be stricter
-but is not Agent Hook 0.1 behavior.
+All response controls are ignored for an event the host declares `observe`.
+For the three Post Gates, control applies to buffered rendering, delivery, or
+context ingestion and MUST NOT be represented as rollback of completed model,
+tool, or network work. Claude Code's native response shapes remain
+event-specific, and this guide claims no universal byte-for-byte compatibility.
 
-Before delivering the five added events, adapters MUST satisfy the
-[revised-draft compatibility requirements](./core.md#versioning-and-conformance).
-Older 0.1 schemas reject these names; an unchanged `spec` value alone does not
-establish that a handler is configured to accept them.
+Adapters MUST correlate the native invocation with `event_id`. An absent,
+invalid, timed-out, or errored response supplies no decision from that handler
+invocation. A timeout alone follows the Core fail-open default, but a failure
+MUST NOT erase another accepted denial, rewrite, or approval requirement for
+the same pending action. Independent native policy still applies.
+
+Before delivering the current eighteen-event baseline, adapters MUST satisfy
+the [draft compatibility requirements](./core.md#versioning-and-conformance).
+The current wire identifier is `agent-hook-unity/0.1`. Earlier local drafts
+used the colliding `agent-hooks/0.1` value; adapters MUST update configuration
+and schemas explicitly and MUST NOT silently negotiate between the identifiers.
 
 ## Non-normative stdio adapter pattern
 

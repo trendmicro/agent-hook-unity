@@ -1,5 +1,5 @@
 {
-  "spec": "agent-hooks/0.1",
+  "spec": "agent-hook-unity/0.1",
   "event_id": "c796687b-7acd-5b87-8701-7162382ec68d",
   "hookSpecificOutput": {
     "hookEventName": "PreMemoryWrite",

@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://trendmicro.github.io/agent-hook-standard/schemas/0.1/hook-event.schema.json",
-  "title": "Agent Hook 0.1 Request",
-  "description": "A Claude Code-derived, security-telemetry request for an Agent Hook 0.1 event.",
+  "$id": "https://trendmicro.github.io/agent-hook-unity/schemas/0.1/hook-event.schema.json",
+  "title": "Agent Hook Unity 0.1 Request",
+  "description": "A Claude Code-derived, security-telemetry request for an Agent Hook Unity 0.1 event.",
   "$ref": "#/$defs/HookRequest",
   "$defs": {
     "Uuid": {
@@ -66,7 +66,7 @@
     "CommonRequest": {
       "type": "object",
       "properties": {
-        "spec": { "const": "agent-hooks/0.1" },
+        "spec": { "const": "agent-hook-unity/0.1" },
         "event_id": { "$ref": "#/$defs/Uuid" },
         "hook_event_name": { "$ref": "#/$defs/EventName" },
         "session_id": { "type": "string", "minLength": 1 },

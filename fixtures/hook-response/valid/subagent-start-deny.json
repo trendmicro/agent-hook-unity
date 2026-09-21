@@ -1,5 +1,5 @@
 {
-  "spec": "agent-hooks/0.1",
+  "spec": "agent-hook-unity/0.1",
   "event_id": "3e9b110a-42cd-4b11-b011-8292834b1234",
   "decision": "deny",
   "reason": "Delegation depth limit exceeded (max_depth: 2)."

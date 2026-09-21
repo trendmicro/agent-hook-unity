@@ -1,5 +1,5 @@
 {
-  "spec": "agent-hooks/0.1",
+  "spec": "agent-hook-unity/0.1",
   "event_id": "9f3bc4e2-5d6e-4f7a-9b0c-1d2e3f4a5b6c",
   "hook_event_name": "x-nemo/SessionRevoke",
   "session_id": "sess_production_9981",

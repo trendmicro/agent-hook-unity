@@ -5,7 +5,7 @@ const [organizationName, projectName] = repository.split('/');
 const repositoryUrl = `https://github.com/${repository}`;
 
 const config: Config = {
-  title: 'Agent Hook Spec',
+  title: 'Agent Hook Unity',
   tagline: 'A portable lifecycle-hook protocol for AI agents and tooling',
   favicon: 'img/favicon.svg',
   url: `https://${organizationName}.github.io`,
@@ -56,7 +56,7 @@ const config: Config = {
   themeConfig: {
     image: 'img/social-card.svg',
     navbar: {
-      title: 'Agent Hook Spec',
+      title: 'Agent Hook Unity',
       items: [
         { to: '/', label: 'Overview', position: 'left' },
         { to: '/participate', label: 'Participate', position: 'left' },
@@ -86,7 +86,7 @@ const config: Config = {
           ]
         }
       ],
-      copyright: `Copyright © ${new Date().getFullYear()} Agent Hook Spec contributors. Documentation is CC BY 4.0; code is MIT.`
+      copyright: `Copyright © ${new Date().getFullYear()} Agent Hook Unity contributors. Documentation is CC BY 4.0; code is MIT.`
     },
     prism: {
       theme: { plain: { color: '#f8fafc', backgroundColor: '#0f172a' }, styles: [] },

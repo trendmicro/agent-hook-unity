@@ -1,5 +1,5 @@
 {
-  "spec": "agent-hooks/0.1",
+  "spec": "agent-hook-unity/0.1",
   "event_id": "f2e90286-1e22-4bc4-b52d-e2a89e4f19b9",
   "hook_event_name": "PostNetworkAccess",
   "session_id": "session-42",

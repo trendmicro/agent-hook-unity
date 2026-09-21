@@ -1,10 +1,11 @@
 # Specification status
 
-Agent Hook 0.1 is an adoption-ready draft proposed by
-[RFC 0001](https://github.com/trendmicro/agent-hook-unity/blob/main/rfcs/0001-agent-hook-core-event-contract.md).
-The revised draft also includes the five standard lifecycle events proposed by
-[RFC 0004](https://github.com/trendmicro/agent-hook-unity/blob/main/rfcs/0004-standard-lifecycle-events.md).
-It is not active until accepted through the process documented in
+Agent Hook Unity 0.1 is a candidate draft for review, using the distinct
+`agent-hook-unity/0.1` wire identifier.
+[RFC 0007](https://github.com/trendmicro/agent-hook-unity/blob/main/rfcs/0007-core-draft-consolidation.md)
+records the original RFC 0001 and RFC 0004 proposals, subsequent changes, and
+the consolidated baseline. The candidate remains unaccepted; its presence in
+the repository does not replace the review and votes required by
 [GOVERNANCE.md](https://github.com/trendmicro/agent-hook-unity/blob/main/GOVERNANCE.md).
 
 The draft's canonical normative documents are in [0.1](./0.1/index.md).

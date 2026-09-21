@@ -1,7 +1,7 @@
 ---
 title: "RFC 0005: Inspect and control response content with PostNetworkAccess"
 status: Draft
-discussion: "Pending — repository Discussions are not enabled"
+discussion: "Pending — prerequisite Discussion has not been opened"
 review-start: "Not started"
 review-end: "Not scheduled"
 maintainer-votes: []
@@ -28,15 +28,18 @@ access it. A Post handler can allow the body, allow a replacement body, or deny
 delivery. A host that only reports network results retains `observe` behavior.
 The Core fail-open default is preserved.
 
-This is a proposal for a subsequent revision of the **unaccepted Agent Hook
-0.1 draft**. Current main classifies `PostNetworkAccess` as Observe and requires
-hosts to ignore its control responses. This RFC proposes changing that contract;
-it does not change the canonical specification, schemas, or runtime behavior
-in this PR. No new event name is proposed.
+This remains a proposal against the **unaccepted Agent Hook Unity 0.1 draft**.
+Since this RFC was introduced, PR #9 added buffered `PostNetworkAccess`
+allow/deny delivery control to the working Core draft. Complete-body inspection,
+recipient/body fields, and body replacement proposed here are still absent
+from the canonical schemas. [RFC 0007](./0007-core-draft-consolidation.md)
+records that partial adoption into the working draft and its pending review
+status; it does not mark this RFC Accepted. No new event name is proposed.
 
 Formal review has not started. The prerequisite Discussion and review window
 required by [GOVERNANCE.md](../GOVERNANCE.md) remain pending; repository
-Discussions are currently disabled. This Draft PR is preparatory material.
+Discussions was enabled on 2026-09-21, but that does not start formal review.
+This Draft is preparatory material.
 
 ## Motivation
 
@@ -167,22 +170,27 @@ It MUST NOT rewrite the original network facts.
 ### 4. Event-specific control and body replacement
 
 Reuse the correlated response envelope: required `spec`, matching `event_id`,
-and `hookSpecificOutput.hookEventName: "PostNetworkAccess"`. Delivery controls
+and canonical top-level `decision`. A replacement additionally requires
+`hookSpecificOutput.hookEventName: "PostNetworkAccess"`. Delivery controls
 apply only when the host declares `gate`, the event has `outcome: "success"`,
 and the complete body and recipient fields are present.
 
-| `hookSpecificOutput.permissionDecision` | Effect |
+| Top-level `decision` | Effect |
 | --- | --- |
 | `allow` | Permit delivery of the evaluated body, or the explicit replacement below, subject to independent native policies. |
 | `deny` | Withhold the body. The host may return a safe local refusal without exposing denied bytes. |
 | `ask` | Keep the body unavailable until the existing native approval flow resolves. A non-interactive host MUST treat this as `deny`. |
 | `defer` | Leave the decision to native approval or policy; this is not approval. |
 
-`permissionDecisionReason` MAY explain the decision. Introduce one replacement
+Top-level `reason` explains the decision and is required for `deny`. The
+supported nested control fields remain a fallback only when top-level
+`decision` is absent. `ask` and `defer` here are additional proposed Post
+controls; the current Core delivery Gate supports only allow/deny.
+Introduce one replacement
 member: **`hookSpecificOutput.updatedResponseBodyBase64`**. When present it MUST
 be a string containing valid standard padded base64 without whitespace. An
 empty string represents a deliberate empty replacement, not an omitted value.
-Its replacement effect applies only with an explicit `permissionDecision: "allow"`.
+Its replacement effect applies only with an explicit effective `allow` decision.
 With `deny`, `ask`, `defer`, or no decision, it has no replacement effect;
 in particular, a denial MUST NOT release replacement bytes.
 
@@ -205,7 +213,7 @@ the original sensitive body. That host application failure is distinct from
 an invalid or missing handler response.
 
 This event gives no delivery-control or rewriting effect to `updatedInput`,
-`updatedMessages`, top-level `decision`, or other event-inapplicable controls. It adds no
+`updatedMessages`, or other event-inapplicable controls. It adds no
 `transform` or `quarantine` decision enum. A valid deny withholds the body;
 quarantine storage, retention, deletion, and any later release remain native
 responsibilities. Retaining denied content MUST NOT make it readable to the
@@ -298,7 +306,8 @@ native permission boundary and all required identifiers are actually present.
 
 ## Illustrative exchange
 
-These examples describe the **candidate semantics**, not current main behavior.
+These examples include the **proposed body-inspection semantics**, beyond the
+current candidate's buffered allow/deny delivery control.
 The existing schemas permit additional event and event-specific response members;
 structural validation does not mean an existing Observe host will apply them.
 
@@ -307,7 +316,7 @@ has buffered it for one recipient and declares the revised Post `gate` contract:
 
 ```json
 {
-  "spec": "agent-hooks/0.1",
+  "spec": "agent-hook-unity/0.1",
   "event_id": "018f6c3a-9214-7abc-9f12-34567890ab01",
   "hook_event_name": "PostNetworkAccess",
   "session_id": "session-42",
@@ -331,12 +340,12 @@ Option A: the handler allows replacement with the ten bytes `[REDACTED]`:
 
 ```json
 {
-  "spec": "agent-hooks/0.1",
+  "spec": "agent-hook-unity/0.1",
   "event_id": "018f6c3a-9214-7abc-9f12-34567890ab01",
+  "decision": "allow",
+  "reason": "Replace the sensitive text before delivery.",
   "hookSpecificOutput": {
     "hookEventName": "PostNetworkAccess",
-    "permissionDecision": "allow",
-    "permissionDecisionReason": "Replace the sensitive text before delivery.",
     "updatedResponseBodyBase64": "W1JFREFDVEVEXQ=="
   }
 }
@@ -350,13 +359,10 @@ Alternatively, option B denies delivery of the same response:
 
 ```json
 {
-  "spec": "agent-hooks/0.1",
+  "spec": "agent-hook-unity/0.1",
   "event_id": "018f6c3a-9214-7abc-9f12-34567890ab01",
-  "hookSpecificOutput": {
-    "hookEventName": "PostNetworkAccess",
-    "permissionDecision": "deny",
-    "permissionDecisionReason": "This response must not be delivered."
-  }
+  "decision": "deny",
+  "reason": "This response must not be delivered."
 }
 ```
 
@@ -366,17 +372,20 @@ result remains success. No additional network event is needed in either case.
 
 ## Compatibility impact
 
-This proposal keeps all 18 event names and reuses the existing envelope. It
-**changes an existing Observe contract** to permit response-delivery control.
-Current main requires controls on `PostNetworkAccess` to be ignored; adding
-content or a permission decision alone does not enable this behavior.
+This proposal keeps all 18 event names and reuses the existing envelope. Its
+original baseline classified `PostNetworkAccess` as Observe. The current
+working draft already permits buffered response-delivery allow/deny for a host
+declaring `gate`; this proposal additionally introduces complete-body inspection
+and replacement. Existing `observe` configurations continue to ignore controls.
 
 Adopters MUST update the event registry, schemas, capability declarations, and
 host/handler configuration together for the adopted revision. They MUST enable
 the revised Post contract only for explicitly configured compatible hosts and
 handlers. An old telemetry handler's response MUST NOT silently acquire control
-authority. Keeping `spec: "agent-hooks/0.1"` during an unaccepted draft does not
-establish compatibility or automatic negotiation. Existing Observe mappings
+authority. The consolidation candidate uses `spec: "agent-hook-unity/0.1"`;
+its identifier alone does not establish support for this further body-inspection
+proposal. [RFC 0007](./0007-core-draft-consolidation.md) documents migration from
+the former colliding identifier. Existing Observe mappings
 remain usable as Observe and gain no delivery-enforcement claim.
 
 If 0.1 is accepted before this proposal is decided, revisit versioning through
@@ -401,14 +410,15 @@ authenticity. Default fail-open remains part of the proposed contract.
 
 | Alternative | Trade-off |
 | --- | --- |
-| Add `BeforeNetworkResponseDelivery` | Preserves the existing Observe-only definition, but adds a third network event for a flow that the Pre/Post pair can cover. This proposal favors fewer event names and explicitly revises Post semantics. |
-| Keep Post strictly observational and use a vendor event | Supports experimentation before adoption, but offers no shared content-control behavior across hosts. |
+| Add `BeforeNetworkResponseDelivery` | Would preserve the original Observe-only baseline, but adds a third network event for a flow that the current Pre/Post pair already covers. |
+| Keep full-body inspection in a vendor event | Supports experimentation before adoption, but offers no shared body-inspection and replacement behavior across hosts. |
 | Inspect each streaming chunk | Reduces buffering latency but requires cross-chunk, cancellation, and already-delivered-content rules. It is outside this full-body proposal. |
 | Reuse `updatedInput` or add `transform`/`quarantine` decisions | Obscures whether input or response bytes change, or mixes delivery decisions with storage policy. An explicit body replacement field plus existing permission decisions is sufficient. |
 
 ## Follow-up implementation and acceptance criteria
 
-After acceptance, a follow-up PR must update `spec/0.1/events.md` (including
+After acceptance, a follow-up PR for the remaining body-inspection and
+replacement features must update `spec/0.1/events.md` (including
 the registry and shared network/memory terminal rules), `core.md` response and
 capability rules, adapter/security guidance, root and published schemas,
 fixtures, and examples together. `PostMemoryWrite` stays Observe. The event
@@ -459,4 +469,5 @@ This RFC does not claim vendor acceptance, co-authorship, or implementation.
 
 Pending. The prerequisite Discussion, at least 14 calendar days of public
 review, and maintainer decision remain outstanding under repository governance.
-RFC 0004 remains the current definition until an adopted revision changes it.
+The working draft includes later changes described by RFC 0007; their presence
+does not accept this RFC's remaining body-inspection and replacement proposal.

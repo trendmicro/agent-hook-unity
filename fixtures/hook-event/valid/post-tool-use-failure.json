@@ -1,5 +1,5 @@
 {
-  "spec": "agent-hooks/0.1",
+  "spec": "agent-hook-unity/0.1",
   "event_id": "9bc1db77-460b-4208-9a3b-164e0189c1e3",
   "hook_event_name": "PostToolUseFailure",
   "session_id": "session-42",

@@ -1,5 +1,5 @@
 {
-  "spec": "agent-hooks/0.1",
+  "spec": "agent-hook-unity/0.1",
   "event_id": "a248c9ee-5290-4680-b028-a98b6fbd19ef",
   "hook_event_name": "PermissionRequest",
   "session_id": "session-42",

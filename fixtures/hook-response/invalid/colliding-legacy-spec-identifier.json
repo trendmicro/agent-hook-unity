@@ -1,0 +1,11 @@
+{
+  "spec": "agent-hooks/0.1",
+  "event_id": "7a83870b-fd4b-4f44-a49e-cc2e2511e5ff",
+  "metadata": {
+    "audit_id": "audit-17",
+    "latency_ms": 2.4,
+    "triggered_rules": [
+      "tool-audit"
+    ]
+  }
+}

@@ -1,5 +1,5 @@
 {
-  "spec": "agent-hooks/0.1",
+  "spec": "agent-hook-unity/0.1",
   "hook_event_name": "PreToolUse",
   "session_id": "session-42",
   "timestamp": "2026-09-09T10:15:30Z",

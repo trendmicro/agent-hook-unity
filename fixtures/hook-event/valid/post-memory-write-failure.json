@@ -1,5 +1,5 @@
 {
-  "spec": "agent-hooks/0.1",
+  "spec": "agent-hook-unity/0.1",
   "event_id": "55b3bf68-5701-5e1c-bd3a-753d7e86353c",
   "hook_event_name": "PostMemoryWrite",
   "session_id": "session-42",

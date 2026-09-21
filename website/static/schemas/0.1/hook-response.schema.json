@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://trendmicro.github.io/agent-hook-standard/schemas/0.1/hook-response.schema.json",
-  "title": "Agent Hook 0.1 Response",
-  "description": "A correlated Claude Code-shaped response to an Agent Hook 0.1 request.",
+  "$id": "https://trendmicro.github.io/agent-hook-unity/schemas/0.1/hook-response.schema.json",
+  "title": "Agent Hook Unity 0.1 Response",
+  "description": "A correlated Claude Code-shaped response to an Agent Hook Unity 0.1 request.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -11,7 +11,7 @@
   ],
   "properties": {
     "spec": {
-      "const": "agent-hooks/0.1"
+      "const": "agent-hook-unity/0.1"
     },
     "event_id": {
       "$ref": "#/$defs/Uuid"

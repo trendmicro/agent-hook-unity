@@ -1,5 +1,5 @@
 {
-  "spec": "agent-hooks/0.1",
+  "spec": "agent-hook-unity/0.1",
   "event_id": "47d3c093-2e5d-4ed3-bf6c-b76240712852",
   "decision": "deny",
   "reason": "Security policy requires fail-closed enforcement on uninspected tool execution during PDP timeout.",

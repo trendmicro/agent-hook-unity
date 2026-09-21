@@ -1,5 +1,5 @@
 {
-  "spec": "agent-hooks/0.1",
+  "spec": "agent-hook-unity/0.1",
   "event_id": "df08a46f-f71d-56a6-87a4-e99cff8b5414",
   "hook_event_name": "PreConfigChange",
   "session_id": "session-42",

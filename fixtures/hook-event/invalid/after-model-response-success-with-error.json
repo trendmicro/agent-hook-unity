@@ -1,5 +1,5 @@
 {
-  "spec": "agent-hooks/0.1",
+  "spec": "agent-hook-unity/0.1",
   "event_id": "ae8e9b81-5d66-438e-9a5f-13244da034ce",
   "hook_event_name": "AfterModelResponse",
   "session_id": "session-42",

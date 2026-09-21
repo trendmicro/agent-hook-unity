@@ -1,7 +1,7 @@
 ---
 title: "RFC 0004: Standard network, memory, and configuration lifecycle events"
 status: Draft
-discussion: "Pending — repository Discussions are not enabled"
+discussion: "Pending — prerequisite Discussion has not been opened"
 review-start: "Not started"
 review-end: "Not scheduled"
 maintainer-votes: []
@@ -13,6 +13,13 @@ superseded-by: []
 # RFC 0004: Standard network, memory, and configuration lifecycle events
 
 ## Summary
+
+**Historical proposal baseline:** The event table below preserves this
+proposal's original classifications, including Observe-only
+`PostNetworkAccess`. PR #9 subsequently changed the working draft, and
+[RFC 0007](./0007-core-draft-consolidation.md) records the resulting candidate
+baseline and identity migration. This RFC remains unaccepted; its original
+proposal does not override the current canonical candidate.
 
 Extend the Agent Hook 0.1 draft's single standard event registry with
 `PreNetworkAccess`, `PostNetworkAccess`, `PreMemoryWrite`, `PostMemoryWrite`,
@@ -26,8 +33,9 @@ capability declarations. A host claiming support must implement the declared
 event faithfully; no separate optional-event namespace is introduced.
 
 This is a proposal, not an accepted specification. Formal review has not
-started. Repository Discussions must be enabled and a prior Discussion linked
-before the formal review window begins under [GOVERNANCE.md](../GOVERNANCE.md).
+started. Repository Discussions was enabled on 2026-09-21; a prior Discussion
+must still be linked before the formal review window begins under
+[GOVERNANCE.md](../GOVERNANCE.md).
 
 ## Motivation
 
@@ -53,7 +61,7 @@ appear in all capitals. Event requirements apply to hosts declaring the event
 `gate` or `observe`; `partial` and `unavailable` MUST NOT be presented as
 faithful standard-event deliveries.
 
-The existing flat `spec: "agent-hooks/0.1"` envelope, delivery identifiers,
+The original flat `spec: "agent-hooks/0.1"` envelope, delivery identifiers,
 session ordering, redaction rules, and native policy authority are preserved.
 No runtime, transport, handler discovery, capability negotiation, signature,
 ledger, approval gateway, or managed session revocation is specified here.
