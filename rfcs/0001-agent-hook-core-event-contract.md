@@ -1,9 +1,9 @@
 ---
 title: "RFC 0001: Agent Hook 0.1 Core Event Contract"
 status: Draft
-discussion: "TBD — GitHub Discussion required before formal review"
-review-start: TBD
-review-end: TBD
+discussion: "Pending — prerequisite Discussion has not been opened"
+review-start: "Not started"
+review-end: "Not scheduled"
 maintainer-votes: []
 decision: "Pending"
 supersedes: []
@@ -13,6 +13,14 @@ superseded-by: []
 # RFC 0001: Agent Hook 0.1 Core Event Contract
 
 ## Summary
+
+**Historical proposal baseline:** The original proposal below describes 13
+events and the earlier event-specific response model. Subsequent draft changes
+are consolidated by [RFC 0007](./0007-core-draft-consolidation.md), including
+18 events, top-level decisions, deny preservation, and the distinct
+`agent-hook-unity/0.1` identity. Follow the current canonical draft for that
+candidate's requirements. This RFC remains unaccepted; links to current files
+do not retroactively change this original proposal's review status.
 
 This RFC proposes Agent Hook 0.1, a portable JSON contract for lifecycle-hook
 events and hook responses. It defines a native envelope, a 13-event Core

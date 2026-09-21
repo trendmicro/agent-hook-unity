@@ -5,9 +5,9 @@ sidebar_position: 1
 
 import Link from '@docusaurus/Link';
 
-# Agent Hook Spec
+# Agent Hook Unity
 
-Agent Hook Spec defines a shared lifecycle event and response contract for AI
+Agent Hook Unity defines a shared lifecycle event and response contract for AI
 agents and their tooling. It gives runtime builders and handler authors a
 common vocabulary for describing an operation, correlating its events, and
 identifying the boundaries at which a handler can influence execution.
@@ -33,7 +33,7 @@ transport, or the order of multiple handlers.
 ## What the contract guarantees
 
 The <Link to="/specification/0.1/events">event registry</Link> defines eighteen
-Core events: seven **Gate** events and eleven **Observe** events. Gate events
+Core events: twelve **Gate** events and six **Observe** events. Gate events
 can control a pending operation when the host declares and implements that
 capability. Observe events report a lifecycle boundary; a response does not
 turn them into preventive controls.
@@ -50,37 +50,43 @@ execution order, process lifecycle, authentication, and transport remain host
 concerns. An interoperable document does not establish identical multi-handler
 policy composition across hosts.
 
-The 0.1 draft treats missing, invalid, timed-out, or errored handler responses
-as providing no Agent Hook control result. For an event declared `gate`, the
-default is **fail open**: the operation continues unless an independent native
-policy blocks it. Observe responses have no control effect. The contract does
-not provide a sandbox or guarantee that every
-internal runtime or provider operation is visible. In particular, the Observe
-events for completed model and tool results do not promise output filtering
-or rollback. The <Link to="/specification/0.1/core#host-obligations">host
+The 0.1 draft treats a missing, invalid, timed-out, or errored handler response
+as no control result from that invocation. A timeout alone is **fail open**,
+subject to other valid decisions for the same pending action and independent
+native policy. It cannot erase an accepted denial, rewrite, or approval
+requirement. Observe responses have no control effect. Completed model, tool,
+and network
+operations are Gate-capable only when the host buffers the relevant result;
+their controls govern rendering, delivery, or context ingestion and do not
+roll back completed work. The contract does not provide a sandbox or guarantee
+that every internal runtime or provider operation is visible. The
+<Link to="/specification/0.1/core#host-obligations">host
 obligations</Link> and <Link to="/specification/0.1/security">security
 considerations</Link> explain these boundaries.
 
 ## Current status
 
-The repository contains an unaccepted **Agent Hook 0.1 draft** proposed by
+The repository contains an unaccepted **Agent Hook Unity 0.1 draft** proposed by
 RFC 0001, with standard network, memory, and configuration events proposed by
-RFC 0004. It defines a portable event and response contract, schemas, fixtures,
-examples, and adapter guidance. It is not active until accepted through the
-public RFC process.
+RFC 0004. It defines a portable security and telemetry contract, schemas,
+fixtures, examples, and adapter guidance. It is not active until accepted
+through the public RFC process.
 
 Local agents can use the draft without enterprise identity, remote approval,
-or audit services. Earlier 0.1 schemas do not recognize the five added network,
-memory, and configuration events; use compatible schemas and configured
-handlers as described in the
+or audit services. The original 13-event schemas do not recognize the five
+later network, memory, and configuration additions. The immediate pre-migration
+draft already has 18 events but uses the old wire identity; update schemas and
+handler configuration together as described in the
 <Link to="/specification/0.1/core#versioning-and-conformance">versioning rules</Link>.
 
-This contract is neither a byte-for-byte Claude Code hook interface nor the
+This contract now uses `agent-hook-unity/0.1` on the wire. It is neither a
+byte-for-byte Claude Code hook interface nor the
 separate [Responsible AI Agent Hooks contract](https://responsibleai.github.io/agent-hooks/).
-The latter also uses `agent-hooks/0.1`, but its `interception_point` context and
+The latter uses `agent-hooks/0.1`, but its `interception_point` context and
 verdict documents are different from this draft's `hook_event_name` events and
-correlated responses. The identifier alone does not establish compatibility.
-This clarification does not change the identifier or either contract's behavior.
+correlated responses. Earlier local Agent Hook drafts used that same identifier.
+Migrating implementations must update their configured identifier and schemas
+explicitly; the draft defines no automatic wire negotiation.
 
 ## Start reading
 
@@ -94,14 +100,19 @@ The response reference and capability example are informative guides to the
 canonical specification. They identify unresolved behavior without defining
 new controls or claiming tested support for a real host.
 
-### Draft response-inspection proposal
+### Consolidated draft provenance
 
-[RFC 0005 / PR #8](https://github.com/trendmicro/agent-hook-unity/pull/8) proposes
-extending `PostNetworkAccess` to inspect, replace, or withhold response content
-before an agent receives it. It keeps the existing Pre/Post pair and all
-eighteen event names. The RFC is a draft awaiting the prerequisite Discussion
-and formal review; it has not been adopted. The published 0.1 draft still
-defines `PostNetworkAccess` as Observe and ignores its control responses.
+The repository draft includes the top-level decision and additional Gate work
+merged in [PR #9](https://github.com/trendmicro/agent-hook-unity/pull/9). It also
+implements the buffered response-delivery control described by
+[draft RFC 0005](https://github.com/trendmicro/agent-hook-unity/blob/main/rfcs/0005-network-response-delivery-inspection.md): a `PostNetworkAccess` Gate may
+allow or deny delivery after the request completes. RFC 0005's response-body
+inspection and replacement fields remain unimplemented proposals.
+
+[Draft RFC 0007](https://github.com/trendmicro/agent-hook-unity/blob/main/rfcs/0007-core-draft-consolidation.md)
+records this consolidation, the wire-identifier migration, and the review work
+still required. It does not mark the specification or the earlier RFCs as
+accepted.
 
 ## Get involved
 

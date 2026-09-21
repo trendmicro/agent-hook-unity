@@ -1,5 +1,5 @@
 {
-  "spec": "agent-hooks/0.1",
+  "spec": "agent-hook-unity/0.1",
   "event_id": "7b42b9ef-a080-53f1-948a-72305405be7e",
   "hook_event_name": "PreNetworkAccess",
   "session_id": "session-42",

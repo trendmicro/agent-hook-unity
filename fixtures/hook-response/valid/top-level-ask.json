@@ -1,5 +1,5 @@
 {
-  "spec": "agent-hooks/0.1",
+  "spec": "agent-hook-unity/0.1",
   "event_id": "36c2b982-1d4c-4dc2-ae5b-a65139601741",
   "decision": "ask",
   "reason": "Administrative privileges required to access production database."

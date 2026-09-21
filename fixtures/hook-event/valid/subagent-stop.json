@@ -1,5 +1,5 @@
 {
-  "spec": "agent-hooks/0.1",
+  "spec": "agent-hook-unity/0.1",
   "event_id": "f9c74d10-f408-448d-9579-7ddab4245388",
   "hook_event_name": "SubagentStop",
   "session_id": "session-42",

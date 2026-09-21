@@ -1,5 +1,5 @@
 {
-  "spec": "agent-hooks/0.1",
+  "spec": "agent-hook-unity/0.1",
   "event_id": "3c6477d4-f95c-4c45-b601-46e652956a54",
   "hook_event_name": "BeforeModelRequest",
   "session_id": "session-42",

@@ -1,5 +1,5 @@
 {
-  "spec": "agent-hooks/0.1",
+  "spec": "agent-hook-unity/0.1",
   "event_id": "260d8de3-2b56-48ed-914f-3d8d446cb9e0",
   "decision": "deny",
   "reason": "Prompt injection detected"

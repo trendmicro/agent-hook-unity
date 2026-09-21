@@ -2,6 +2,6 @@
   <rect width="1200" height="630" fill="#082f49"/>
   <rect x="96" y="102" width="150" height="150" rx="28" fill="#146c94"/>
   <path d="M130 136h36v36h-36zm48 0h36v36h-36zm-48 48h36v36h-36zm48 0h36v36h-36z" fill="#fff"/>
-  <text x="96" y="370" fill="#fff" font-family="Arial, sans-serif" font-size="74" font-weight="700">Agent Hook Spec</text>
+  <text x="96" y="370" fill="#fff" font-family="Arial, sans-serif" font-size="74" font-weight="700">Agent Hook Unity</text>
   <text x="96" y="440" fill="#bae6fd" font-family="Arial, sans-serif" font-size="36">A portable lifecycle-hook protocol for AI agents</text>
 </svg>

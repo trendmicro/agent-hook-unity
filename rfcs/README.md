@@ -20,12 +20,12 @@ See [GOVERNANCE.md](../GOVERNANCE.md) for review, voting, and status rules.
 ## Response inspection proposal
 
 [RFC 0005](./0005-network-response-delivery-inspection.md) proposes extending
-`PostNetworkAccess` to inspect, replace, or withhold buffered response content
-before an agent receives it. It keeps the Pre/Post pair and all 18 Core event
-names, preserves Observe-only implementations and the fail-open default, and
-requires explicit configuration for the revised control semantics. The draft
-awaits the prerequisite Discussion and formal review; the current specification
-and schemas do not yet implement it.
+`PostNetworkAccess` to inspect and replace complete buffered response content
+before an agent receives it. Buffered delivery allow/deny is already present in
+the working Core draft through PR #9; the proposed body fields and replacement
+are not implemented. The Pre/Post pair and all 18 event names remain, and
+Observe configurations retain their behavior. The RFC remains Draft with its
+prerequisite Discussion and formal review pending.
 
 ## Enterprise security extensions proposal
 
@@ -38,3 +38,12 @@ and administrative session revocation). It preserves Core 0.1
 minimalism and interoperability while offering standard integration blueprints
 for enterprise PEPs (e.g. NeMo Relay) and PDPs (e.g. Trend Micro Vision One).
 
+## Consolidation candidate
+
+[RFC 0007](./0007-core-draft-consolidation.md) records the working baseline's
+provenance, the 12 Gate / 6 Observe classification, top-level responses and
+legacy syntax fallback, cross-handler deny preservation, and migration to the
+distinct `agent-hook-unity/0.1` identity and current schema URLs. Its companion
+files make the candidate testable; no RFC becomes Accepted merely because the
+draft changes are present in the repository. External telemetry/correlation
+interoperability remains a separate evaluation, with no adapter claim.

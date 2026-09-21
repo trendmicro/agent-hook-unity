@@ -1,6 +1,6 @@
-# Agent Hook Spec
+# Agent Hook Unity
 
-Agent Hook Spec is a community effort to define a portable lifecycle-hook
+Agent Hook Unity is a community effort to define a portable lifecycle-hook
 protocol for AI agents and their tooling. It will let agent builders describe
 events, hook payloads, hook responses, and security telemetry using a shared,
 interoperable model.
@@ -16,11 +16,17 @@ occur.
 
 ## Status
 
-The repository contains an adoption-ready Agent Hook 0.1 draft proposed by
-[RFC 0001](rfcs/0001-agent-hook-core-event-contract.md), with five additional
-standard events proposed by
-[RFC 0004](rfcs/0004-standard-lifecycle-events.md). It is not active until
-accepted through the RFC process. Join the
+The repository contains a candidate Agent Hook Unity 0.1 draft for review.
+[RFC 0007](rfcs/0007-core-draft-consolidation.md) consolidates the original
+RFC 0001 and RFC 0004 proposals with subsequent working-draft changes, the
+12 Gate / 6 Observe registry, and the minimum cross-handler deny guarantee.
+The canonical wire identifier is `agent-hook-unity/0.1`; see the
+[migration guide](schemas/README.md#migrating-the-unaccepted-draft) before
+upgrading an integration that uses the former `agent-hooks/0.1` identifier.
+
+The candidate is not an active standard until accepted through the RFC
+process. Working files and merged PRs do not substitute for recorded review
+and votes. Join the
 [GitHub Discussions](https://github.com/trendmicro/agent-hook-unity/discussions)
 to help shape it.
 
@@ -30,6 +36,7 @@ to help shape it.
 - [`spec/`](spec/README.md) — canonical normative specification Markdown.
 - [`schemas/`](schemas/README.md) — machine-readable JSON Schemas.
 - [`fixtures/`](fixtures/README.md) — schema-validation fixtures.
+- [`conformance/`](conformance/gate-composition.md) — behavioral scenarios for host integration tests; not an executed runtime claim.
 - [`examples/`](examples/README.md) — illustrative integrations.
 - [`website/`](website/) — Docusaurus source for the GitHub Pages site.
 

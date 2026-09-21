@@ -6,7 +6,7 @@ sidebar_position: 2
 
 ## Status and terminology
 
-This document defines the Agent Hook 0.1 draft. The key words **MUST**,
+This document defines the Agent Hook Unity 0.1 draft. The key words **MUST**,
 **MUST NOT**, **REQUIRED**, **SHOULD**, **SHOULD NOT**, **RECOMMENDED**, **MAY**,
 and **OPTIONAL** in this document are to be interpreted as described in
 [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119) and
@@ -37,7 +37,7 @@ Every event MUST contain these flat members:
 
 | Member | Meaning |
 | --- | --- |
-| `spec` | The Agent Hook contract identifier, exactly `agent-hooks/0.1`. |
+| `spec` | The Agent Hook contract identifier, exactly `agent-hook-unity/0.1`. |
 | `event_id` | A UUID that uniquely identifies this delivered event. |
 | `hook_event_name` | A Core or extension event name. Core values are defined by the event registry. |
 | `session_id` | An opaque identifier for the host session that emitted the event. |
@@ -125,9 +125,11 @@ within `hookSpecificOutput`). When no payload mutation is required,
 
 When payload rewriting or event-specific output is needed, `hookSpecificOutput`
 MUST contain `hookEventName` matching the request, and MAY provide the applicable
-surgical rewrite member (`updatedPrompt`, `updatedInput`, `updatedResponse`,
-`updatedOutput`, `updatedContent`). For backward compatibility with earlier
-handlers, a host MUST also accept `permissionDecision` and `permissionDecisionReason`
+rewrite members listed in the Gate table below. Native approval updates for
+`PermissionRequest` retain their existing `hookSpecificOutput.decision`
+container; its `behavior` is structurally required but ignored for control
+when a canonical top-level decision is present. For backward compatibility
+with earlier handlers, a host MUST also accept `permissionDecision` and `permissionDecisionReason`
 inside `hookSpecificOutput` only when top-level `decision` is omitted.
 
 | Core Gate | Canonical control response | Data plane rewrite support (`hookSpecificOutput`) | Effect |
@@ -137,7 +139,7 @@ inside `hookSpecificOutput` only when top-level `decision` is omitted.
 | `BeforeModelRequest` | `decision: "allow"`, `"deny"`, `"ask"`, or `"defer"` | `updatedMessages` | Controls complete model request; `updatedMessages` replaces messages dispatched to provider. |
 | `AfterModelResponse` | `decision: "allow"` or `"deny"` | `updatedResponse` | Controls model response before UI rendering or context ingestion (when declared `gate`); `updatedResponse` replaces model output. Controls delivery and rendering, not inference rollback. |
 | `PreToolUse` | `decision: "allow"`, `"deny"`, `"ask"`, or `"defer"` | `updatedInput` | Controls tool invocation; `updatedInput` replaces tool parameters before execution. |
-| `PermissionRequest` | `decision: "allow"` or `"deny"` (or nested `decision.behavior`) | `updatedInput`, `updatedPermissions` | Controls native approval request. |
+| `PermissionRequest` | `decision: "allow"` or `"deny"` (or nested `decision.behavior`) | `decision.updatedInput`, `decision.updatedPermissions` | Controls native approval request. The nested update members are relative to `hookSpecificOutput`. |
 | `PostToolUse` | `decision: "allow"` or `"deny"` | `updatedOutput` | Controls completed tool output before context ingestion (when declared `gate`); `updatedOutput` sanitizes result before ingestion. Controls ingestion into agent context, not tool execution rollback. |
 | `PreNetworkAccess` | `decision: "allow"`, `"deny"`, `"ask"`, or `"defer"` | None. | `deny` prevents pending outbound application request. |
 | `PostNetworkAccess` | `decision: "allow"` or `"deny"` | None. | Controls delivery of completed response content to the application caller (when declared `gate` on buffered transport); `deny` prevents response delivery. Controls delivery to caller, not network rollback. Response body inspection and rewriting are deferred to RFC 0005. |
@@ -147,6 +149,42 @@ inside `hookSpecificOutput` only when top-level `decision` is omitted.
 
 An `allow` only passes that hook's native gate; it MUST NOT override sandbox,
 organization, managed-policy, or user-approval restrictions.
+
+### Multiple handlers and repeated evaluation
+
+A **pending action** is the effect controlled at one declared Gate boundary:
+for a Pre Gate, the dispatch or mutation that has not occurred; for a Post
+Gate, the delivery, rendering, or ingestion that has not occurred. A host that
+accepts a valid `deny` (or `block` where that event supports it) for a pending
+action MUST NOT perform that action. An accepted denial can use the canonical
+top-level decision or a supported legacy nested denial when the top-level
+decision is absent. This denial is binding for the same pending action at the
+same Gate boundary. It MUST survive:
+
+- another handler returning `allow`, `ask`, `defer`, or a rewrite;
+- another handler returning no usable control result because its response is
+  absent, invalid, mismatched, errored, or timed out;
+- redelivery to the same or another handler with a different `event_id`; and
+- reevaluation of that pending action, including reevaluation required after
+  its target or proposed values change.
+
+`event_id` correlates one response to one delivery; changing it MUST NOT clear
+a denial of the underlying pending action. An operation identifier can span
+different lifecycle boundaries, but a Pre boundary and its Post boundary
+control distinct pending actions. A denial at one boundary therefore does not
+become a control result at another boundary, and a denial for one operation
+MUST NOT deny an unrelated operation.
+
+Core does not prescribe whether hosts invoke handlers sequentially or in
+parallel, or how they order or reconcile multiple valid rewrites. Unless an
+accepted denial has already made the action impossible, a host MUST NOT cross
+the Gate until every applicable handler invocation has completed or reached
+its declared deadline, every applicable `ask` or native approval has resolved,
+and native policy permits the action. A response failure supplies no decision;
+it MUST NOT erase another valid decision or cause an already accepted rewrite
+to be silently discarded. If the action is otherwise permitted, accepted
+rewrites remain subject to the host's mutation ordering and conflict policy
+and to the native validation rule below.
 
 For Post Gates (`AfterModelResponse`, `PostToolUse`, `PostNetworkAccess`), the
 controlled effect is strictly delivery to the caller, rendering to the user, or
@@ -165,8 +203,8 @@ mechanisms and are not defined as an interoperable wire protocol in Core 0.1.
 `defer` leaves resolution to native approval or policy and MUST NOT count as
 approval.
 
-When a handler supplies a schema-valid data-plane rewrite (`updatedPrompt`,
-`updatedInput`, `updatedResponse`, `updatedOutput`, `updatedContent`), the host
+When a handler supplies a schema-valid, event-supported rewrite or native
+approval update from the Gate table above, the host
 MUST apply its native validation rules before committing the mutated value. If the
 replacement fails native validation, the host MUST fail closed (terminating the
 turn or treating the decision as `deny`) and MUST NOT silently fall back to the
@@ -192,11 +230,16 @@ capability MUST NOT emit a normalized Core event.
 ## Fail-open behavior
 
 An absent response, invalid JSON, schema-invalid response, correlation
-mismatch, handler error, or timeout MUST result in no Agent Hook control result.
-A host that declared the event `gate` MUST continue the affected operation
-unless an independent native policy blocks it. Adapters SHOULD emit a diagnostic
-record containing the event ID, hook event name, failure class, and handler
-identity without retaining sensitive event data.
+mismatch, handler error, or timeout supplies no Agent Hook control result for
+that invocation. It is not an implicit denial or permission. After every
+applicable handler invocation has completed or reached its deadline, the host
+MUST continue the pending action if no accepted denial binds it, no other
+applicable valid Agent Hook decision withholds permission, required approvals
+have resolved, and independent native policy permits it. Thus a timeout as the
+only handler outcome retains the 0.1 fail-open default, while a timeout
+alongside an accepted denial does not weaken that denial. Adapters SHOULD emit
+a diagnostic record containing the event ID, hook event name, failure class,
+and handler identity without retaining sensitive event data.
 
 This requirement controls only Agent Hook 0.1. It does not weaken host,
 sandbox, administrative, or organization policy. A host requiring fail-closed
@@ -216,18 +259,19 @@ guide, not a new execution order for native policy checks or multiple handlers.
 | Declare the actual boundary | Publish a mode for every Core event. Claim `gate` only when the registry classifies the event as a Gate and the host can faithfully observe and enforce it. Declare limitations; do not normalize a `partial` or `unavailable` signal into a Core event. | [Versioning and conformance](#versioning-and-conformance) |
 | Construct a faithful event | Emit a schema-valid event at the event's defined boundary, with the required delivery, session, turn, and operation identifiers. Preserve correlation through the adapter. Omit optional context that cannot be supplied faithfully and apply the existing redaction rules. | [Event envelope](#event-envelope), [security correlation](#security-correlation), [data minimization](#data-minimization-and-redaction), [event registry](./events.md#core-event-registry) |
 | Validate and pair the response | Check the response schema and match `event_id` to this delivery. If `hookSpecificOutput` is present, also match its `hookEventName` to the event's `hook_event_name`. Schema validation alone does not establish these cross-document matches. | [Response envelope](#response-envelope) |
-| Apply the event's Gate control | Interpret control only for a registry Gate declared `gate`. Apply that event's response shape and effect, including its rewrite support where defined. A valid denial prevents the action at the stated boundary. The network, memory, and configuration Gates require reevaluation if the presented operation, target, or proposed values change before dispatch or mutation. | [Response envelope](#response-envelope), [Gate and Observe semantics](./events.md#gate-and-observe-semantics) |
+| Apply the event's Gate control | Interpret control only for a registry Gate declared `gate`. Apply that event's response shape and effect, including its rewrite support where defined. An accepted valid denial remains binding to the same pending action at that boundary across handlers, delivery retries, and reevaluation. The network, memory, and configuration Gates require reevaluation if the presented operation, target, or proposed values change before dispatch or mutation. | [Response envelope](#response-envelope), [multiple handlers and repeated evaluation](#multiple-handlers-and-repeated-evaluation), [Gate and Observe semantics](./events.md#gate-and-observe-semantics) |
 | Keep Observe responses observational | Ignore response controls for control purposes on an `observe` event. Diagnostic or observational retention is optional; retaining a response does not authorize changing the observed action. | [Response envelope](#response-envelope), [Gate and Observe semantics](./events.md#gate-and-observe-semantics) |
 | Preserve native authority | An Agent Hook `allow` passes only that hook's native gate. Sandbox, organization, managed-policy, and user-approval restrictions still apply. Follow the event-specific approval semantics: `PreNetworkAccess`, `PreMemoryWrite`, and `PreConfigChange` use native approval for `ask`, treat `ask` as `deny` on a non-interactive host, and do not treat `defer` as approval. | [Response envelope](#response-envelope) |
-| Handle response failures | An absent or unusable response supplies no Agent Hook control result. For a declared Gate, continue the affected operation unless an independent native policy blocks it. Adapters should record the minimal diagnostics described below. | [Fail-open behavior](#fail-open-behavior) |
+| Handle response failures | An absent or unusable response supplies no Agent Hook control result for that invocation. Continue a pending action only when no accepted denial, other valid Agent Hook decision, unresolved approval, or independent native policy blocks it. Adapters should record the minimal diagnostics described below. | [Fail-open behavior](#fail-open-behavior) |
 
 ### Response-failure reference
 
 All conditions in this table have the same outcome under the existing
-[fail-open rule](#fail-open-behavior): no Agent Hook control result. For an
-event declared `gate`, the operation continues unless independent native
-policy blocks it. For an `observe` event, a response has no control effect in
-the first place.
+[fail-open rule](#fail-open-behavior): no Agent Hook control result from that
+invocation. For an event declared `gate`, an isolated failure does not deny the
+pending action, but it does not override accepted denials, other applicable
+decisions, unresolved approvals, or independent native policy. For an
+`observe` event, a response has no control effect in the first place.
 
 | Condition | Why it is not a valid control result |
 | --- | --- |
@@ -256,23 +300,35 @@ rely on a shared behavior:
 | Question | Current boundary |
 | --- | --- |
 | Common-field precedence on a Gate | The schema accepts common members such as `continue` and `stopReason`, but 0.1 does not fully define their interaction with event-specific Gate controls. For example, it does not define a portable precedence rule for `continue: false` together with `permissionDecision: "allow"`. The existing Observe control-ignore rule still applies. |
-| A rewrite that fails native validation | The response envelope identifies the events that accept `updatedInput` or `updatedMessages`. It does not fully define how a host handles a schema-valid response whose replacement fails a native tool or model-input constraint. Such a failure is distinct from a response that fails the Hook Response schema; the response-failure table does not choose a replacement, retry, or rejection policy for it. |
+| Ordering or conflict between multiple valid rewrites | Core does not prescribe sequential or parallel handler scheduling, mutation order, or a winner between conflicting valid rewrites. The host's policy is still subject to deny preservation, completion and deadline safety, and fail-closed native validation of the value it would commit. A response failure alone cannot erase an accepted rewrite or restore the original value. |
 | Failure to construct a valid event | Producers still owe schema-valid, faithful events and accurate capability declarations. The fail-open clause covers response and handler failures; it does not define a general disposition of the pending operation when the producer cannot construct a valid event. Fabricating missing data or treating an unfaithful signal as a normalized Core event would violate the existing requirements. |
 
-Handler ordering, response composition, transport bindings, and asynchronous
-approval workflows remain outside this section's scope. No fail-closed mode or
-new approval mechanism is introduced here.
+Handler scheduling, rewrite conflict resolution, transport bindings, and
+asynchronous approval mechanisms remain outside this section's scope except
+for the minimum composition and approval-safety requirements above. No general
+fail-closed profile or new approval mechanism is introduced here.
 
 ## Versioning and conformance
 
 `spec` is a major/minor contract identifier. A 0.1 implementation MUST emit and
-accept exactly `agent-hooks/0.1`; patch-only specification changes do not change
-the member. Future incompatible envelopes require a new major version.
+accept exactly `agent-hook-unity/0.1`. The earlier `agent-hooks/0.1` value
+collides with a different project and MUST NOT be silently accepted or
+negotiated as an alias. The namespace change is a coordinated migration to a
+separate wire identity, not a compatibility claim. Pinned pre-migration schemas
+remain linked from the
+[schema guide](https://github.com/trendmicro/agent-hook-unity/blob/main/schemas/README.md)
+for integrations that deliberately retain the old draft. Future incompatible
+envelopes require a new major version.
 
-This revision extends an unaccepted 0.1 draft with `PreNetworkAccess`,
+This revision consolidates an unaccepted 0.1 draft under the new identity and
+extends it with `PreNetworkAccess`,
 `PostNetworkAccess`, `PreMemoryWrite`, `PostMemoryWrite`, and `PreConfigChange`
-while retaining `agent-hooks/0.1`. Earlier 0.1 schemas reject these names;
-the unchanged identifier does not imply compatibility with existing handlers.
+while preserving the current partial `PostNetworkAccess` Gate: it can control
+delivery on a buffered transport, while response-body inspection and rewriting
+remain deferred to RFC 0005. The original 13-event 0.1 schemas reject the five
+additional event names. The immediate pre-migration 18-event schemas include
+them but use the former colliding identifier. Implementations MUST treat this
+as an explicit migration rather than inferred compatibility.
 Adopters MUST update their schemas and capability declarations and ensure
 handler compatibility and configuration before enabling the new events.
 Hosts MUST deliver these events only to handlers configured for this revised
@@ -280,6 +336,12 @@ draft. Automatic handler discovery or version negotiation is not defined, and
 an unknown event MUST NOT be treated as an implicit `allow` response.
 The [fail-open rule](#fail-open-behavior) still applies to response failures
 for configured event deliveries.
+
+The provenance and still-pending adoption decisions for this consolidation are
+recorded in
+[draft RFC 0007](https://github.com/trendmicro/agent-hook-unity/blob/main/rfcs/0007-core-draft-consolidation.md).
+That RFC is not accepted, and this text does not represent an acceptance
+decision.
 
 A host claiming 0.1 conformance MUST publish a capability declaration that
 enumerates every Core `hook_event_name` in the event registry. For each name,
@@ -296,8 +358,9 @@ A host MUST NOT fabricate a Core event to improve its declaration. It MUST NOT
 declare `gate` when the native timing is post-effect, a response cannot be
 enforced, redaction removes the security-relevant information needed for the
 declared boundary, or the event registry classifies the event as Observe.
-Core 0.1 normatively adheres to the [fail-open rule](#fail-open-behavior)
-under handler error or timeout. Alternative degradation behaviors (such as
+Core 0.1 normatively adheres to the [fail-open rule](#fail-open-behavior) for an
+individual handler error or timeout while preserving other valid decisions for
+the same pending action. Alternative degradation behaviors (such as general
 fail-closed enforcement profiles) are deferred to dedicated profile RFCs.
 
 Core membership standardizes event names and semantics; it does not require a

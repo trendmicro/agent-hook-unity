@@ -1,5 +1,5 @@
 {
-  "spec": "agent-hooks/0.1",
+  "spec": "agent-hook-unity/0.1",
   "event_id": "9a7e02cc-b112-401f-bf44-d89346ba1234",
   "decision": "allow",
   "reason": "Host environment and sandbox integrity verified."

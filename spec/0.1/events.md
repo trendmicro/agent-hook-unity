@@ -4,7 +4,8 @@ sidebar_position: 3
 
 # Event registry
 
-This document defines the Core event registry for the Agent Hook 0.1 draft.
+This document defines the Core event registry for the Agent Hook Unity 0.1
+draft.
 The capitalized key words **MUST**, **MUST NOT**, **REQUIRED**, **SHOULD**,
 **SHOULD NOT**, **RECOMMENDED**, **MAY**, and **OPTIONAL** in this document are
 to be interpreted as described in the [Core protocol](./core.md).
@@ -337,9 +338,11 @@ policy, host policy, or user approval.
 
 A host MAY declare any Gate as `gate` (enabling control decisions) or as
 `observe` (telemetry only), based on host architecture, transport capabilities,
-and policy. When declared `gate`, the host MUST enforce the handler's control
-response; when declared `observe`, the host MUST ignore control members for
-enforcement purposes while retaining observational telemetry.
+and policy. When declared `gate`, the host MUST enforce applicable valid
+control responses under the Core
+[composition rules](./core.md#multiple-handlers-and-repeated-evaluation); when
+declared `observe`, the host MUST ignore control members for enforcement
+purposes while retaining observational telemetry.
 
 An **Observe** event records a lifecycle boundary without making the event a
 portable control point. A host MUST NOT use a handler response to retroactively
@@ -350,7 +353,9 @@ change an observed action while claiming conformance to this registry.
 declaring `gate`, a decision applies only to the operation, target, and proposed
 values presented to the handler. If those change before dispatch or mutation,
 the host MUST evaluate the Gate again against the changed operation before
-proceeding. A host that cannot enforce this precondition MUST NOT claim `gate`.
+proceeding. Reevaluation does not clear an accepted denial of the same pending
+action at this boundary, even though it uses a new delivery and `event_id`. A
+host that cannot enforce this precondition MUST NOT claim `gate`.
 For `PreMemoryWrite`, an optional `updatedContent` member in `hookSpecificOutput`
 MAY provide sanitized or redacted content to be stored in place of the proposed
 content. For `PreNetworkAccess` and `PreConfigChange`, content-rewriting controls
@@ -358,8 +363,11 @@ have no effect.
 
 ## Correlation and ordering
 
-`event_id` identifies a single delivery to a single handler. It MUST NOT be
-used in place of an action or lifecycle correlation identifier.
+`event_id` identifies a single delivery to a single handler. Separate handlers,
+redelivery, and reevaluation use distinct `event_id` values. Those new delivery
+identifiers MUST NOT be used to clear a decision binding the same pending
+action, and they MUST NOT be used in place of an action or lifecycle
+correlation identifier.
 
 - `model_request_id` correlates `BeforeModelRequest` with
   `AfterModelResponse`.
@@ -383,11 +391,13 @@ For the network, memory, and configuration events, `operation_id` MUST be a
 nonempty opaque string identifying one underlying operation, unique within
 the session across these activities. The host MUST generate it at the
 underlying operation boundary even when a pre-event cannot be observed. It
-MUST remain stable across paired pre/post events and redelivery. If the exact
-same operation reaches `PermissionRequest` or `PermissionDenied`, those events
-MUST retain this `operation_id`; a different underlying operation MUST NOT
-reuse it. A consumer MUST NOT substitute a destination, memory key,
-configuration target, or delivery `event_id` for operation correlation.
+MUST remain stable across paired pre/post events, redelivery, and reevaluation
+of the same underlying operation. Stability does not merge the distinct
+pending actions controlled at Pre and Post Gate boundaries. If the exact same
+operation reaches `PermissionRequest` or `PermissionDenied`, those events MUST
+retain this `operation_id`; a different underlying operation MUST NOT reuse it.
+A consumer MUST NOT substitute a destination, memory key, configuration target,
+or delivery `event_id` for operation correlation.
 
 ## Sensitive content and telemetry
 

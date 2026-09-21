@@ -7,6 +7,11 @@ sidebar_position: 2
 GitHub Discussions is the home for questions, ideas, use cases, and RFC
 proposals. Start there before opening a formal RFC pull request.
 
+Discussions was enabled on 2026-09-21. The current consolidation candidate is
+preparatory material and has not started formal review; see
+[RFC 0007](https://github.com/trendmicro/agent-hook-unity/blob/main/rfcs/0007-core-draft-consolidation.md)
+for its scope and pending decision record.
+
 Use GitHub Issues for reproducible repository problems, such as a broken link,
 an invalid fixture, or a failing build. Sensitive reports belong in the private
 channel described by the repository security policy.

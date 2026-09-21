@@ -1,5 +1,5 @@
 {
-  "spec": "agent-hooks/0.1",
+  "spec": "agent-hook-unity/0.1",
   "event_id": "135c51e7-1ae2-4a87-a00f-dab80b3779d8",
   "hook_event_name": "SessionEnd",
   "session_id": "session-42",

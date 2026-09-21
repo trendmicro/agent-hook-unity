@@ -17,9 +17,17 @@ An Agent Hook control response that permits an operation only passes that
 handler's gate. It MUST NOT bypass native approval, sandbox, organization,
 managed-policy, or platform restrictions. A refusal reason should be useful to
 the agent but MUST NOT expose secrets or protected policy details. A response
-that requests approval must use a host approval flow; non-interactive hosts MUST
-deny instead of assuming consent, unless the host supports asynchronous turn
-suspension pending an out-of-band approval token.
+that requests approval must use a host approval flow. The pending action MUST
+NOT proceed while approval is unresolved; non-interactive hosts without a
+native suspension mechanism MUST deny instead of assuming consent.
+
+Once the host accepts a valid denial for a pending action at a Gate boundary,
+that denial remains binding across other handler results, delivery retries,
+and reevaluation of the same pending action. A failure, timeout, or later
+`allow` MUST NOT turn that denial into permission. This rule is scoped to the
+same pending action and boundary: a related Post Gate controls a distinct
+delivery or ingestion action, and an unrelated operation requires its own
+decisions.
 
 Only the gate events defined by the event registry may interpret a control
 response: `SessionStart`, `UserPromptSubmit`, `BeforeModelRequest`,
@@ -91,13 +99,16 @@ calls or subagents run concurrently.
 
 ## Failure and telemetry
 
-The 0.1 default is fail open: an unavailable or malformed handler response
-does not become a denial. Hosts SHOULD record a minimal diagnostic with the
-event ID, `hook_event_name`, handler identity, and failure class. They SHOULD
-redact or omit prompt text, model data, tool data, secrets, and personal data
-from those records. A diagnostic record SHOULD retain only the correlation
+The 0.1 default is fail open for an individual unavailable, malformed, errored,
+or timed-out handler response: that invocation supplies no control result. It
+does not become a denial, erase an accepted denial or rewrite, resolve an
+approval, or override native policy. Hosts SHOULD record a minimal diagnostic
+with the event ID, `hook_event_name`, handler identity, and failure class. They
+SHOULD redact or omit prompt text, model data, tool data, secrets, and personal
+data from those records. A diagnostic record SHOULD retain only the correlation
 identifiers and outcome needed to investigate the event.
 
 Handlers SHOULD validate the event schema before producing a security control
-response and SHOULD return only one correlated response. A response for a different
-event ID is invalid and must fail open under the core protocol.
+response and SHOULD return only one correlated response. A response for a
+different event ID is invalid and supplies no control result for that
+invocation under the Core protocol; it cannot override another valid result.

@@ -1,6 +1,6 @@
-# Contributing to Agent Hook Spec
+# Contributing to Agent Hook Unity
 
-Thank you for your interest in improving the Agent Hook Spec. We welcome
+Thank you for your interest in improving the Agent Hook Unity. We welcome
 documentation corrections, schema and example improvements, feature proposals,
 and fixes.
 
@@ -16,7 +16,7 @@ and fixes.
 ## Discussing ideas and reporting issues
 
 Use [GitHub Discussions](https://github.com/trendmicro/agent-hook-unity/discussions)
-for questions, ideas, use cases, and proposed changes to the Agent Hook Spec.
+for questions, ideas, use cases, and proposed changes to the Agent Hook Unity.
 Start a discussion before drafting an RFC so the community can help shape the
 proposal.
 
@@ -32,6 +32,13 @@ details include:
 For substantial changes to the protocol, schema, or semantics, follow the RFC
 process in [GOVERNANCE.md](GOVERNANCE.md). A formal RFC pull request must link
 to its prior GitHub Discussion.
+
+The repository's existing unaccepted draft files include a consolidated
+candidate described by [RFC 0007](rfcs/0007-core-draft-consolidation.md).
+They are preparatory review material, not a record of completed governance.
+Discussions was enabled on 2026-09-21; formal review still requires a linked
+Discussion and the normal review window and votes. Do not mark a proposal
+Accepted merely because its candidate files have been merged.
 
 ## Contributing changes
 
