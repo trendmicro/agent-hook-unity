@@ -47,3 +47,15 @@ distinct `agent-hook-unity/0.1` identity and current schema URLs. Its companion
 files make the candidate testable; no RFC becomes Accepted merely because the
 draft changes are present in the repository. External telemetry/correlation
 interoperability remains a separate evaluation, with no adapter claim.
+
+## Delegation lineage and trace context proposal
+
+[RFC 0008](./0008-delegation-lineage-and-trace-context.md) proposes that every
+event performed by a delegated agent carry `agent_id` and `delegation_id`, that
+`SubagentStart` link to its parent delegation and delegating tool call, and
+that the schema's existing `trace` member follow W3C Trace Context with a
+`parent_span_id`. It defines resumption, child-session, and orphan-stop rules,
+adds `delegation_attribution` and `trace_context` capability properties, and
+offers an optional `sec.enterprise.delegation` profile for task fingerprint,
+scope escalation, and delegation budgets. No Core event is added or
+reclassified. The RFC remains Draft with its prerequisite Discussion pending.
